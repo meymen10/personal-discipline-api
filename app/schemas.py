@@ -14,13 +14,19 @@ class SwimmingLog(BaseModel):
     duration_minutes: int = Field(..., gt=0, examples=[45])
     style: str = Field(..., examples=["Freestyle"])
 
+class WalkingLog(BaseModel):
+    distance_km: float = Field(..., gt=0, examples=[6.5])
+    duration_minutes: int = Field(..., gt=0, examples=[75])
+    location: str = Field(..., examples=["Outdoor/Park"])
+
 class WorkoutCreate(BaseModel):
-    workout_type: str = Field(..., examples=["Weightlifting", "Swimming"])
+    workout_type: str = Field(..., examples=["Weightlifting", "Swimming", "Walking"])
     weight_details: Optional[List[WeightLog]] = None
     swimming_details: Optional[SwimmingLog] = None
+    walking_details: Optional[WalkingLog] = None
 
 # --- NUTRITION MODELS ---
 class MealCreate(BaseModel):
     meal_name: str = Field(..., examples=["Dinner"])
     calories: int = Field(..., gt=0, examples=[650])
-    log_time: time = Field(..., examples=["16:30"])
+    log_time: time = Field(..., examples=["16:30:00"])
