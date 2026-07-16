@@ -1,21 +1,22 @@
 from fastapi import FastAPI, status
-from app.schemas import WorkoutCreate, MealCreate
+from app.schemas import WorkoutCreate, MealCreate, HydrationLog
 from datetime import time
 
 app = FastAPI(
     title="Personal Discipline and Performance API",
-    description="Backend service for tracking workouts, swimming sessions, and time-restricted feeding routines.",
-    version="1.0.0"
+    description="Backend service for tracking workouts, hydration, and strict dietary routines.",
+    version="1.1.0"
 )
 
-# In-memory storage (Temporary before database integration)
 db_workouts = []
 db_meals = []
+db_hydration = [] # Yeni geçici veri tabanı
 
 @app.get("/", tags=["General"])
 def read_root():
-    return {"status": "System online", "version": "1.0.0-alpha"}
+    return {"status": "System online", "version": "1.1.0"}
 
+# --- WORKOUT ENDPOINTS ---
 @app.post("/workouts/", status_code=status.HTTP_201_CREATED, tags=["Workouts"])
 def log_workout(workout: WorkoutCreate):
     db_workouts.append(workout)
@@ -25,25 +26,43 @@ def log_workout(workout: WorkoutCreate):
 def get_workouts():
     return {"total_count": len(db_workouts), "records": db_workouts}
 
+# --- HYDRATION ENDPOINTS (YENİ) ---
+@app.post("/hydration/", status_code=status.HTTP_201_CREATED, tags=["Hydration"])
+def log_hydration(hydration: HydrationLog):
+    db_hydration.append(hydration)
+    return {"message": "Hydration details logged", "data": hydration}
+
+@app.get("/hydration/", tags=["Hydration"])
+def get_hydration():
+    return {"total_count": len(db_hydration), "records": db_hydration}
+
+# --- NUTRITION ENDPOINTS ---
 @app.post("/meals/", status_code=status.HTTP_201_CREATED, tags=["Nutrition"])
 def log_meal(meal: MealCreate):
-    # Strict intermittent fasting rule: warn if meal is logged after 17:00 (5:00 PM)
     limit_time = time(17, 0)
     is_late = meal.log_time > limit_time
+    has_sugar = meal.contains_refined_sugar
     
     meal_data = meal.model_dump()
     meal_data["intermittent_fasting_violation"] = is_late
+    meal_data["sugar_violation"] = has_sugar
     
     db_meals.append(meal_data)
     
+    warnings = []
     if is_late:
+        warnings.append("Time Limit (17:00) Exceeded")
+    if has_sugar:
+        warnings.append("Refined Sugar Detected")
+        
+    if warnings:
         return {
-            "message": "Meal logged BUT the 17:00 time limit was exceeded!",
-            "status": "Time Limit Violation",
+            "message": "Meal logged BUT rule violations occurred!",
+            "status": " | ".join(warnings),
             "data": meal_data
         }
         
-    return {"message": "Meal logged successfully within the time restrictions", "data": meal_data}
+    return {"message": "Meal logged successfully within all discipline rules", "data": meal_data}
 
 @app.get("/meals/", tags=["Nutrition"])
 def get_meals():
