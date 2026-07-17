@@ -19,6 +19,9 @@ class WalkingLog(BaseModel):
     distance_km: float = Field(..., gt=0, examples=[6.0])
     duration_minutes: int = Field(..., gt=0, examples=[60])
     location: str = Field(..., examples=["Outdoor/Park"])
+    # --- YENİ EKLENEN DIŞ API ALANLARI ---
+    temperature_c: Optional[float] = Field(default=None, description="Otomatik olarak dış API'den çekilecek")
+    weather_condition: Optional[str] = Field(default=None, description="Otomatik olarak dış API'den çekilecek")
 
 class WorkoutCreate(BaseModel):
     workout_type: str = Field(..., examples=["Weightlifting", "Swimming", "Walking"])

@@ -18,7 +18,25 @@ def read_root():
 
 # --- WORKOUT ENDPOINTS ---
 @app.post("/workouts/", status_code=status.HTTP_201_CREATED, tags=["Workouts"])
-def log_workout(workout: WorkoutCreate):
+async def log_workout(workout: WorkoutCreate): # YENİ: async eklendi
+    
+    # EĞER BİR YÜRÜYÜŞ KAYDI VARSA DIŞ API'YE (OPEN-METEO) BAĞLAN
+    if workout.walking_details:
+        # İstanbul Koordinatları
+        weather_url = "https://api.open-meteo.com/v1/forecast?latitude=41.01&longitude=28.97&current_weather=true"
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(weather_url)
+                if response.status_code == 200:
+                    weather_data = response.json().get("current_weather", {})
+                    # Dışarıdan gelen veriyi kendi şemamıza yazdırıyoruz
+                    workout.walking_details.temperature_c = weather_data.get("temperature")
+                    workout.walking_details.weather_condition = f"Rüzgar: {weather_data.get('windspeed')} km/h"
+            except Exception:
+                # Dış API çökerse bizim sistemimiz hata vermesin, sadece bilgi düşsün
+                workout.walking_details.weather_condition = "Dış API'ye ulaşılamadı"
+
     db_workouts.append(workout)
     return {"message": "Workout logged successfully", "data": workout}
 
